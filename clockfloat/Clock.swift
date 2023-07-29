@@ -97,14 +97,13 @@ class Clock: NSObject, NSApplicationDelegate {
    
    func getRemainingTimeAsMins() -> Double {
       let remainingTimeAsMins = self.getRemainingTimeAsSeconds() / 60
-      print("\(remainingTimeAsMins)")
+      print("\(remainingTimeAsMins) / \(self.getRemainingTimeAsDate()) / \(self.getRemainingTimeAsSeconds())")
       return remainingTimeAsMins
    }
    
    func getRemainingTimeAsDate () -> Date {
       
       let remainingTimeAsDate = Date.init(timeIntervalSince1970: self.getRemainingTimeAsSeconds())
-      print("\(remainingTimeAsDate)")
       return remainingTimeAsDate
       
    }
@@ -214,7 +213,6 @@ class Clock: NSObject, NSApplicationDelegate {
       
       if format == "mins" {
          label.timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-            self.getRemainingTimeAsDate()
             label.stringValue = self.remainingTimeAsString(formatter: formatter)
          }
       } else {
