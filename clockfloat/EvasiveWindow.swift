@@ -25,9 +25,12 @@ import Cocoa
 class EvasiveWindow: NSWindow {
 
    var xpadding: CGFloat = 5
-   var ypadding: CGFloat = 5
-   var wMarginRatio: CGFloat = 1.3
-   var hMarginRatio: CGFloat = 1.3
+   var ypadding: CGFloat = 75
+   var wMarginRatio: CGFloat = 2
+//   var hMarginRatio: CGFloat = 1.3
+   var hMarginRatio: CGFloat = 2.5
+   
+   let bgAlpha = 0.4
 
    var stickToWindow: EvasiveWindow?
    var stuckToMeWindow: EvasiveWindow? = nil
@@ -46,18 +49,6 @@ class EvasiveWindow: NSWindow {
    {
       self.name = name
       self.targetScreen = screen
-
-      let winHeight = label.fittingSize.height * self.hMarginRatio
-      var winWidth = label.fittingSize.width * self.wMarginRatio
-
-      if stickWin != nil {
-         self.stickToWindow = stickWin
-         winWidth = self.stickToWindow!.frame.width
-      }
-
-      let winRect = NSRect(x: 0, y: 0,
-                           width: winWidth,
-                           height: winHeight)
 
       super.init(contentRect: winRect,
                  styleMask: .borderless,
@@ -92,10 +83,14 @@ class EvasiveWindow: NSWindow {
       self.isMovableByWindowBackground = true
       self.level = .floating
       self.collectionBehavior = .canJoinAllSpaces
-      self.backgroundColor = NSColor(red: 0, green: 0, blue: 0, alpha: 0.75)
+      self.backgroundColor = NSColor(red: 0, green: 0, blue: 0, alpha: self.bgAlpha)
 
       self.orderFrontRegardless()
       self.refreshOrigin()
+   }
+   
+   private func getWinRect () -> NSRect {
+      
    }
 
    public func move() {

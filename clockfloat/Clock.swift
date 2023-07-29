@@ -26,10 +26,12 @@ class Clock: NSObject, NSApplicationDelegate {
    
    var startTime : Date
    var endTime : Date
-   let timerMins : Double = 25
+   let timerMins : Double = 0.01
    let graceMins : Double = 5
    let tickSecondsGracePeriod : Double = 4.0
    let tickSecondsOvertimePeriod : Double = 1.0
+   
+   let fgAlpha = 0.25
    
    let tickIndicatorsGood : [String] = [ "🟢", "🔵",  "🟣", "🟡", "🟠" ]
    let tickIndicatorsGrace : [String] = [ "⚠️", "✋", "🙉" ]
@@ -45,7 +47,7 @@ class Clock: NSObject, NSApplicationDelegate {
    var timeWindow: EvasiveWindow?
    
    var dateFont: String = "White Rabbit"
-   var dateFontSize: Double = 0.01
+   var dateFontSize: Double = 0.0075
    
    var timeFont: String = "White Rabbit"
    var timeFontSize: Double = 0.03
@@ -94,7 +96,7 @@ class Clock: NSObject, NSApplicationDelegate {
    }
    
    func getRemainingTimeAsMins() -> Double {
-      return floor(self.getRemainingTimeAsSeconds() / 60)
+      return self.getRemainingTimeAsSeconds() / 60
    }
    
    func getRemainingTimeAsDate () -> Date {
@@ -105,7 +107,7 @@ class Clock: NSObject, NSApplicationDelegate {
 
    func remainingTimeAsString(formatter: DateFormatter) -> String {
       
-      var displayString = String(self.getRemainingTimeAsMins())
+      var displayString = String(Int(floor(self.getRemainingTimeAsMins())))
       
       displayString = displayString.appending(self.getTickerIndicator())
       
@@ -149,7 +151,7 @@ class Clock: NSObject, NSApplicationDelegate {
          tickArray = tickIndicatorsGood
          tickPeriod = totalS / Double(tickArray.count) // 2400 / 5 = 480
          tickPhase = elapsedS / tickPeriod
-         tickIndex = min(Int(tickPhase), (tickArray.count-1))
+         tickIndex = abs(min(Int(tickPhase), (tickArray.count-1)))
          print("GOOD: ElapsedS: \(elapsedS), RemainS: \(remainS), Period: \(tickPeriod), Phase: \(tickPhase), Index: \(tickIndex)")
          return tickArray[tickIndex]
       case .grace:
@@ -202,7 +204,7 @@ class Clock: NSObject, NSApplicationDelegate {
       label.alignment = .center
       label.stringValue = dummytext
       
-      label.textColor = NSColor(red: 1, green: 1, blue: 1, alpha: 0.5)
+      label.textColor = NSColor(red: 1, green: 1, blue: 1, alpha: self.fgAlpha)
       //        label.sizeToFit()
       
       if format == "mins" {
@@ -235,9 +237,9 @@ class Clock: NSObject, NSApplicationDelegate {
          font: self.dateFont,
          fontHeight: self.dateFontSize,
          screen: screen,
-         format: "dd/MM/YYYY HH:mm:ss",
+         format: "HH:mm:ss dd/MM/YYYY",
          interval: 1,
-         dummytext: "dd/MM/YYYY HH:mm:ss"
+         dummytext: "HH:mm:ss dd/MM/YYYY"
       )
       
       self.dateWindow = self.initWindow(
