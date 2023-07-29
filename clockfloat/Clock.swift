@@ -26,14 +26,14 @@ class Clock: NSObject, NSApplicationDelegate {
    
    var startTime : Date
    var endTime : Date
-   let timerMins : Double = 0.1
-   let graceMins : Double = 1.0
-   let tickSecondsGracePeriod : Double = 2.0
+   let timerMins : Double = 25
+   let graceMins : Double = 5
+   let tickSecondsGracePeriod : Double = 4.0
    let tickSecondsOvertimePeriod : Double = 1.0
    
    let tickIndicatorsGood : [String] = [ "🟢", "🔵",  "🟣", "🟡", "🟠" ]
-   let tickIndicatorsGrace : [String] = [ "⚠️", "⛔️", "🙉" ]
-   let tickIndicatorsBad : [String] = ["🔴", "⭕️", "❌", "🛑", "✋" ]
+   let tickIndicatorsGrace : [String] = [ "⚠️", "✋", "🙉" ]
+   let tickIndicatorsBad : [String] = ["🔴", "⭕️", "❌", "🛑" ]
    
    enum TimerStatus {
       case good
@@ -93,11 +93,26 @@ class Clock: NSObject, NSApplicationDelegate {
       
    }
    
+   func getRemainingTimeAsMins() -> Double {
+      return floor(self.getRemainingTimeAsSeconds() / 60)
+   }
+   
    func getRemainingTimeAsDate () -> Date {
       
       return Date.init(timeIntervalSince1970: self.getRemainingTimeAsSeconds())
       
    }
+
+   func remainingTimeAsString(formatter: DateFormatter) -> String {
+      
+      var displayString = String(self.getRemainingTimeAsMins())
+      
+      displayString = displayString.appending(self.getTickerIndicator())
+      
+      return displayString
+   }
+   
+
    
    func getTimerStatus () -> TimerStatus {
       
@@ -124,7 +139,7 @@ class Clock: NSObject, NSApplicationDelegate {
       var tickPeriod : Double
       var tickPhase : Double
       var tickIndex : Int
-      var tickSeconds : Double
+//      var tickSeconds : Double
       let totalS = self.timerMins * 60
       let remainS = round(self.getRemainingTimeAsSeconds())
       let elapsedS = totalS - remainS
@@ -134,57 +149,24 @@ class Clock: NSObject, NSApplicationDelegate {
          tickArray = tickIndicatorsGood
          tickPeriod = totalS / Double(tickArray.count) // 2400 / 5 = 480
          tickPhase = elapsedS / tickPeriod
-//         tickPhase = remainS / tickPeriod
-         // 2400/480=5, 2399/480=4.99, 1200/480= 2.5, 300/480=0.625, 1/480=0.002
-//         tickIndex = tickArray.count - Int(round(tickPhase))
-//         tickIndex = Int(tickPhase) % tickArray.count
          tickIndex = min(Int(tickPhase), (tickArray.count-1))
-//         tickIndex = (tickArray.count - (Int(round(tickPhase)))) % tickArray.count
          print("GOOD: ElapsedS: \(elapsedS), RemainS: \(remainS), Period: \(tickPeriod), Phase: \(tickPhase), Index: \(tickIndex)")
          return tickArray[tickIndex]
       case .grace:
          tickArray = tickIndicatorsGrace
-//         tickPeriod = self.tickSecondsGracePeriod
          tickPeriod = self.tickSecondsGracePeriod
          tickPhase = elapsedS / tickPeriod
          tickIndex = Int(round(tickPhase)) % tickArray.count
-         
-//         tickPhase = Double(Int(elapsedS) % ( tickArray.count * Int(floor(tickPeriod)) ))
-//         tickPhase = floor(abs(elapsedS / tickPeriod))
-//         tickPhase = Double(Int(floor(elapsedS)) % Int(tickPeriod))
-//         tickPhase = elapsedS * tickPeriod / totalS
-//         tickPhase = elapsedS * tickPeriod / totalS
-//         tickIndex = min(Int(tickPhase), tickArray.count)
-//         tickIndex = Int(tickPhase) % tickArray.count
-//         tickIndex = elapsedS
          print("GRACE: ElapsedS: \(elapsedS), RemainS: \(remainS), Period: \(tickPeriod), Phase: \(tickPhase), Index: \(tickIndex)")
-//         tickSeconds = self.tickSecondsGracePeriod
-//         tickPeriod = remainS / tickSeconds
-         // 2400/2=1200, 2399/2=1199.5, 2398/2=1199 2397/2=1198.5, 2396/2=1198, 1200/2=600, 300/2=150, 4/2=2, 3/2=1.5, 2/2=1, 1/2=0.5, 0/2=0
-//         tickIndex = tickArray.count - (Int(round(tickPeriod)) % tickArray.count) - 1
          return tickArray[tickIndex]
       case .overtime:
-         tickArray = self.tickIndicatorsBad
-         tickSeconds = self.tickSecondsOvertimePeriod
-         tickPeriod = remainS / tickSeconds
-         // 2400/1=2400, 2399/1=2399, ..
-         tickIndex = tickArray.count - (Int(round(tickPeriod)) % tickArray.count) - 1
+         tickArray = tickIndicatorsBad
+         tickPeriod = self.tickSecondsOvertimePeriod
+         tickPhase = elapsedS / tickPeriod
+         tickIndex = Int(round(tickPhase)) % tickArray.count
+         print("GRACE: ElapsedS: \(elapsedS), RemainS: \(remainS), Period: \(tickPeriod), Phase: \(tickPhase), Index: \(tickIndex)")
          return tickArray[tickIndex]
       }
-      
-      
-//      let tickIndex = tickIndicatorsGood.count - (Int(self.getRemainingTimeAsSeconds()) % tickIndicatorsGood.count) - 1
-//      return self.tickIndicatorsGood[tickIndex]
-      
-   }
-   
-   func remainingTimeAsString(formatter: DateFormatter) -> String {
-      
-      var displayString = formatter.string(from: self.getRemainingTimeAsDate())
-      
-      displayString = displayString.appending(self.getTickerIndicator())
-      
-      return displayString
    }
    
    func initLabel(font: String, fontHeight: Double, screen: NSScreen, format: String, interval: TimeInterval, dummytext: String) -> TickingTextField {
@@ -223,11 +205,16 @@ class Clock: NSObject, NSApplicationDelegate {
       label.textColor = NSColor(red: 1, green: 1, blue: 1, alpha: 0.5)
       //        label.sizeToFit()
       
-      label.timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-         label.stringValue = self.remainingTimeAsString(formatter: formatter)
-         //         label.stringValue = String(Int(self.endTime.timeIntervalSince(self.startTime)))
+      if format == "mins" {
+         label.timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
+            label.stringValue = self.remainingTimeAsString(formatter: formatter)
+         }
+      } else {
+         label.timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
+            label.stringValue = formatter.string(from: self.getRemainingTimeAsDate())
+         }
       }
-      //      label.timer!.tolerance = interval / 10
+      
       label.timer!.fire()
       
       return label
@@ -248,9 +235,9 @@ class Clock: NSObject, NSApplicationDelegate {
          font: self.dateFont,
          fontHeight: self.dateFontSize,
          screen: screen,
-         format: "d/M/YYYY HH:mm:ss",
+         format: "dd/MM/YYYY HH:mm:ss",
          interval: 1,
-         dummytext: "mm:ss"
+         dummytext: "dd/MM/YYYY HH:mm:ss"
       )
       
       self.dateWindow = self.initWindow(
@@ -266,9 +253,9 @@ class Clock: NSObject, NSApplicationDelegate {
          font: self.timeFont,
          fontHeight: self.timeFontSize,
          screen: screen,
-         format: "   mm:ss   ",
+         format: "mins",
          interval: 1,
-         dummytext: "mm"
+         dummytext: "mins"
       )
       
       self.timeWindow = self.initWindow(
