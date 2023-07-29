@@ -28,9 +28,9 @@ class EvasiveWindow: NSWindow {
    var ypadding: CGFloat = 75
    var wMarginRatio: CGFloat = 2
 //   var hMarginRatio: CGFloat = 1.3
-   var hMarginRatio: CGFloat = 2.5
+   var hMarginRatio: CGFloat = 2.1
    
-   let bgAlpha = 0.4
+   let bgAlpha = 0.75
 
    var stickToWindow: EvasiveWindow?
    var stuckToMeWindow: EvasiveWindow? = nil
@@ -50,13 +50,25 @@ class EvasiveWindow: NSWindow {
       self.name = name
       self.targetScreen = screen
 
+      let winHeight = label.fittingSize.height * self.hMarginRatio
+      var winWidth = label.fittingSize.width * self.wMarginRatio
+
+      if stickWin != nil {
+         self.stickToWindow = stickWin
+         winWidth = self.stickToWindow!.frame.width
+      }
+
+      let winRect = NSRect(x: 0, y: 0,
+                           width: winWidth,
+                           height: winHeight)
+
       super.init(contentRect: winRect,
                  styleMask: .borderless,
                  backing: .buffered,
                  defer: true)
 
       if stickWin != nil {
-         print("\(self.stickToWindow!.name) is stuck to \(self.name)")
+//         print("\(self.stickToWindow!.name) is stuck to \(self.name)")
          self.stickToWindow!.stuckToMeWindow = self
       }
 
@@ -88,13 +100,9 @@ class EvasiveWindow: NSWindow {
       self.orderFrontRegardless()
       self.refreshOrigin()
    }
-   
-   private func getWinRect () -> NSRect {
-      
-   }
 
    public func move() {
-      print("\(self.name) move")
+//      print("\(self.name) move")
 
       if self.stickToWindow == nil {
          self.orientation = Int(self.getOrientation() + 1) % 4
@@ -119,10 +127,10 @@ class EvasiveWindow: NSWindow {
    }
 
    func refreshOrigin() {
-      print("\(self.name) refresh origin. I have an orientation of \(self.getOrientation())")
+//      print("\(self.name) refresh origin. I have an orientation of \(self.getOrientation())")
 
       if let stickWin = self.stickToWindow {
-         print("\(self.name) must stick to \(stickWin.name)")
+//         print("\(self.name) must stick to \(stickWin.name)")
 
          if self.getOrientation() < 2 {
             let x = stickWin.frame.origin.x
@@ -136,7 +144,7 @@ class EvasiveWindow: NSWindow {
          }
       }
       else {
-         print("\(self.name) is free and easy")
+//         print("\(self.name) is free and easy")
 
          let screenW = self.targetScreen?.frame.width ?? 0
          let screenH = self.targetScreen?.frame.height ?? 0
