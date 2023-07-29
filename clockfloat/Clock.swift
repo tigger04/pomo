@@ -26,8 +26,11 @@ class Clock: NSObject, NSApplicationDelegate {
    
    var startTime : Date
    var endTime : Date
-   let timerMins : Int = 40
-   let graceMins : Int = 5
+   let timerMins : Double = 0.1
+   let graceMins : Double = 1.0
+   let tickSecondsGracePeriod : Double = 2.0
+   let tickSecondsOvertimePeriod : Double = 1.0
+   
    let tickIndicatorsGood : [String] = [ "🟢", "🔵",  "🟣", "🟡", "🟠" ]
    let tickIndicatorsGrace : [String] = [ "⚠️", "⛔️", "🙉" ]
    let tickIndicatorsBad : [String] = ["🔴", "⭕️", "❌", "🛑", "✋" ]
@@ -37,16 +40,16 @@ class Clock: NSObject, NSApplicationDelegate {
       case grace
       case overtime
    }
-
+   
    var dateWindow: EvasiveWindow?
    var timeWindow: EvasiveWindow?
-
+   
    var dateFont: String = "White Rabbit"
    var dateFontSize: Double = 0.01
-
+   
    var timeFont: String = "White Rabbit"
    var timeFontSize: Double = 0.03
-
+   
    var late : Double = 150
    
    override public init() {
@@ -54,20 +57,20 @@ class Clock: NSObject, NSApplicationDelegate {
       self.endTime = self.startTime.addingTimeInterval(TimeInterval(timerMins * 60))
       super.init()
    }
-
+   
    func applicationDidFinishLaunching(_ aNotification: Notification) {
       self.initializeAllScreens()
       self.watchForScreenChanges()
    }
-
+   
    func initializeAllScreens() {
-
+      
       for screen in NSScreen.screens {
          self.initTimer(screen: screen)
          self.initDater(screen: screen)
       }
    }
-
+   
    func watchForScreenChanges() {
       NotificationCenter.default.addObserver(
          forName: NSNotification.Name(rawValue: "NSApplicationDidChangeScreenParametersNotification"),
@@ -89,7 +92,7 @@ class Clock: NSObject, NSApplicationDelegate {
       return remainingSeconds
       
    }
-
+   
    func getRemainingTimeAsDate () -> Date {
       
       return Date.init(timeIntervalSince1970: self.getRemainingTimeAsSeconds())
@@ -98,7 +101,7 @@ class Clock: NSObject, NSApplicationDelegate {
    
    func getTimerStatus () -> TimerStatus {
       
-      var remainSecs = self.getRemainingTimeAsSeconds()
+      let remainSecs = self.getRemainingTimeAsSeconds()
       
       var timerStatus: TimerStatus
       
@@ -116,33 +119,65 @@ class Clock: NSObject, NSApplicationDelegate {
    }
    
    func getTickerIndicator() -> String{
-   
+      
       var tickArray : Array<String>
+      var tickPeriod : Double
+      var tickPhase : Double
       var tickIndex : Int
+      var tickSeconds : Double
+      let totalS = self.timerMins * 60
+      let remainS = round(self.getRemainingTimeAsSeconds())
+      let elapsedS = totalS - remainS
       
       switch self.getTimerStatus() {
       case .good:
          tickArray = tickIndicatorsGood
-         let tickPeriod = self.timerMins * 60 / tickArray.count // 2400 / 5 = 480
-         let tickPhase = self.getRemainingTimeAsSeconds() / Double(tickPeriod)
+         tickPeriod = totalS / Double(tickArray.count) // 2400 / 5 = 480
+         tickPhase = elapsedS / tickPeriod
+//         tickPhase = remainS / tickPeriod
          // 2400/480=5, 2399/480=4.99, 1200/480= 2.5, 300/480=0.625, 1/480=0.002
-         tickIndex = Int(round(tickPhase - 1))
-//         return tickIndicatorsGood[tickIndex]
+//         tickIndex = tickArray.count - Int(round(tickPhase))
+//         tickIndex = Int(tickPhase) % tickArray.count
+         tickIndex = min(Int(tickPhase), (tickArray.count-1))
+//         tickIndex = (tickArray.count - (Int(round(tickPhase)))) % tickArray.count
+         print("GOOD: ElapsedS: \(elapsedS), RemainS: \(remainS), Period: \(tickPeriod), Phase: \(tickPhase), Index: \(tickIndex)")
+         return tickArray[tickIndex]
       case .grace:
          tickArray = tickIndicatorsGrace
-         tickPeriod = 1.0
+//         tickPeriod = self.tickSecondsGracePeriod
+         tickPeriod = self.tickSecondsGracePeriod
+         tickPhase = elapsedS / tickPeriod
+         tickIndex = Int(round(tickPhase)) % tickArray.count
+         
+//         tickPhase = Double(Int(elapsedS) % ( tickArray.count * Int(floor(tickPeriod)) ))
+//         tickPhase = floor(abs(elapsedS / tickPeriod))
+//         tickPhase = Double(Int(floor(elapsedS)) % Int(tickPeriod))
+//         tickPhase = elapsedS * tickPeriod / totalS
+//         tickPhase = elapsedS * tickPeriod / totalS
+//         tickIndex = min(Int(tickPhase), tickArray.count)
+//         tickIndex = Int(tickPhase) % tickArray.count
+//         tickIndex = elapsedS
+         print("GRACE: ElapsedS: \(elapsedS), RemainS: \(remainS), Period: \(tickPeriod), Phase: \(tickPhase), Index: \(tickIndex)")
+//         tickSeconds = self.tickSecondsGracePeriod
+//         tickPeriod = remainS / tickSeconds
+         // 2400/2=1200, 2399/2=1199.5, 2398/2=1199 2397/2=1198.5, 2396/2=1198, 1200/2=600, 300/2=150, 4/2=2, 3/2=1.5, 2/2=1, 1/2=0.5, 0/2=0
+//         tickIndex = tickArray.count - (Int(round(tickPeriod)) % tickArray.count) - 1
+         return tickArray[tickIndex]
       case .overtime:
-         tickArray = tickIndicatorsBad
-         tickPeriod = 1.0
+         tickArray = self.tickIndicatorsBad
+         tickSeconds = self.tickSecondsOvertimePeriod
+         tickPeriod = remainS / tickSeconds
+         // 2400/1=2400, 2399/1=2399, ..
+         tickIndex = tickArray.count - (Int(round(tickPeriod)) % tickArray.count) - 1
+         return tickArray[tickIndex]
       }
       
-      return tickArray[tickIndex]
       
-      let tickIndex = tickIndicatorsGood.count - (Int(self.getRemainingTimeAsSeconds()) % tickIndicatorsGood.count) - 1
-      return self.tickIndicatorsGood[tickIndex]
+//      let tickIndex = tickIndicatorsGood.count - (Int(self.getRemainingTimeAsSeconds()) % tickIndicatorsGood.count) - 1
+//      return self.tickIndicatorsGood[tickIndex]
       
    }
-
+   
    func remainingTimeAsString(formatter: DateFormatter) -> String {
       
       var displayString = formatter.string(from: self.getRemainingTimeAsDate())
@@ -151,26 +186,26 @@ class Clock: NSObject, NSApplicationDelegate {
       
       return displayString
    }
-
+   
    func initLabel(font: String, fontHeight: Double, screen: NSScreen, format: String, interval: TimeInterval, dummytext: String) -> TickingTextField {
-
+      
       let formatter = DateFormatter()
       formatter.dateFormat = format
-
-//      let tmpLabel = NSTextField()
-//      tmpLabel.font = NSFont(name: font, size: 20)
-//      tmpLabel.isBezeled = false
-//      tmpLabel.isEditable = false
-//      tmpLabel.drawsBackground = false
-//      tmpLabel.alignment = .center
-//      tmpLabel.stringValue = dummytext
-
+      
+      //      let tmpLabel = NSTextField()
+      //      tmpLabel.font = NSFont(name: font, size: 20)
+      //      tmpLabel.isBezeled = false
+      //      tmpLabel.isEditable = false
+      //      tmpLabel.drawsBackground = false
+      //      tmpLabel.alignment = .center
+      //      tmpLabel.stringValue = dummytext
+      
       let pixelsPerPoint = NSFont(name: font, size: 20)!.boundingRectForFont.height / 20.0
-//      let tmpLabelHeight = tmpLabel.frame.height
-//      let pixelsPerPoint = Double(tmpLabelHeight) / 20.0
-
+      //      let tmpLabelHeight = tmpLabel.frame.height
+      //      let pixelsPerPoint = Double(tmpLabelHeight) / 20.0
+      
       let label = TickingTextField()
-
+      
       if fontHeight < 1.0 {
          let resolvedFontSize = screen.frame.height * fontHeight / pixelsPerPoint
          label.font = NSFont(name: font, size: resolvedFontSize)
@@ -178,46 +213,46 @@ class Clock: NSObject, NSApplicationDelegate {
       else {
          label.font = NSFont(name: font, size: fontHeight)
       }
-
+      
       label.isBezeled = false
       label.isEditable = false
       label.drawsBackground = false
       label.alignment = .center
       label.stringValue = dummytext
-
+      
       label.textColor = NSColor(red: 1, green: 1, blue: 1, alpha: 0.5)
-//        label.sizeToFit()
-
+      //        label.sizeToFit()
+      
       label.timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
          label.stringValue = self.remainingTimeAsString(formatter: formatter)
-//         label.stringValue = String(Int(self.endTime.timeIntervalSince(self.startTime)))
+         //         label.stringValue = String(Int(self.endTime.timeIntervalSince(self.startTime)))
       }
-//      label.timer!.tolerance = interval / 10
+      //      label.timer!.tolerance = interval / 10
       label.timer!.fire()
-
+      
       return label
    }
-
+   
    func initWindow(label: TickingTextField, name: String, screen: NSScreen, stickWin: EvasiveWindow? = nil) -> EvasiveWindow {
       let window = EvasiveWindow(label: label, name: name, screen: screen, stickWin: stickWin)
-
+      
       return window
    }
-
+   
    func initDater(screen: NSScreen) {
-//      if self.dateFontSize < 1.0 {
-//         self.dateFontSize = self.dateFontSize * screen.frame.height
-//      }
-
+      //      if self.dateFontSize < 1.0 {
+      //         self.dateFontSize = self.dateFontSize * screen.frame.height
+      //      }
+      
       let label = self.initLabel(
          font: self.dateFont,
          fontHeight: self.dateFontSize,
          screen: screen,
          format: "d/M/YYYY HH:mm:ss",
-         interval: 5,
+         interval: 1,
          dummytext: "mm:ss"
       )
-
+      
       self.dateWindow = self.initWindow(
          label: label,
          name: "dater",
@@ -225,7 +260,7 @@ class Clock: NSObject, NSApplicationDelegate {
          stickWin: self.timeWindow!
       )
    }
-
+   
    func initTimer(screen: NSScreen) {
       let label = self.initLabel(
          font: self.timeFont,
@@ -235,7 +270,7 @@ class Clock: NSObject, NSApplicationDelegate {
          interval: 1,
          dummytext: "mm"
       )
-
+      
       self.timeWindow = self.initWindow(
          label: label,
          name: "timer",
