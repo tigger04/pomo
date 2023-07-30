@@ -9,7 +9,7 @@ import Foundation
 import Cocoa
 
 let app = NSApplication.shared
-let clock = Clock()
+let clock = InsolentPomoTimer()
 app.delegate = clock
 app.setActivationPolicy(.accessory)
 app.run()

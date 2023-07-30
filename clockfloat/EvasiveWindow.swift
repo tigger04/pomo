@@ -26,9 +26,8 @@ class EvasiveWindow: NSWindow {
 
    var xpadding: CGFloat = 5
    var ypadding: CGFloat = 75
-   var wMarginRatio: CGFloat = 2
-//   var hMarginRatio: CGFloat = 1.3
-   var hMarginRatio: CGFloat = 2.1
+   var wMarginRatio: CGFloat = 1.2
+   var hMarginRatio: CGFloat = 1.5
    
    let bgAlpha = 0.75
 
