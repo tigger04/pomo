@@ -26,7 +26,7 @@ class Clock: NSObject, NSApplicationDelegate {
    
    var startTime : Date
    var endTime : Date
-   let timerMins : Double = 25
+   let timerMins : Double = 40
    let graceMins : Double = 5
    let tickSecondsGracePeriod : Double = 4.0
    let tickSecondsOvertimePeriod : Double = 1.0
@@ -110,7 +110,7 @@ class Clock: NSObject, NSApplicationDelegate {
 
    func remainingTimeAsString(formatter: DateFormatter) -> String {
       
-      var displayString = String(Int(floor(self.getRemainingTimeAsMins())))
+      var displayString = String(Int(round(self.getRemainingTimeAsMins())))
       
       displayString = displayString.appending(self.getTickerIndicator())
       
