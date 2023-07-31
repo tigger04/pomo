@@ -31,8 +31,8 @@ class EvasiveWindow: NSWindow {
    
    let bgAlpha = 0.75
 
-   var stickToWindow: EvasiveWindow?
-   var stuckToMeWindow: EvasiveWindow? = nil
+   weak var stickToWindow: EvasiveWindow?
+   weak var stuckToMeWindow: EvasiveWindow? = nil
 
    var orientation: Int = 2 // default
    // 0 = topleft, 1 = topright, 2 = bottomright, 3 = bottomleft
@@ -42,6 +42,8 @@ class EvasiveWindow: NSWindow {
    var tickingLabel : TickingTextField?
 
    var targetScreen : NSScreen?
+   
+   let l : Logger = Logger()
 
    public init(label: TickingTextField, name: String, screen: NSScreen,
                stickWin: EvasiveWindow? = nil)
@@ -186,31 +188,37 @@ class EvasiveWindow: NSWindow {
 
    override func mouseEntered(with event: NSEvent) {
       super.mouseEntered(with: event)
-      print("mouse entered")
+      l.log("mouse entered")
       self.move()
    }
 
    override func mouseExited(with event: NSEvent) {
       super.mouseExited(with: event)
-      print("mouse exited")
+      l.log("mouse exited")
    }
 
    override func mouseDown(with event: NSEvent) {
       super.mouseDown(with: event)
-      print("mouse down")
+      l.log("mouse down")
       //        self.move()
    }
 
    override func rightMouseDown(with event: NSEvent) {
       super.rightMouseDown(with: event)
-      print("right mouse button down")
+      l.log("right mouse button down")
       self.move()
    }
 
-   deinit {
-      print("EvasiveWindow.deinit (\(self.name))")
-      if let tickingLabel = self.tickingLabel {
-         tickingLabel.killTimer()
-      }
+   public func closeWindow() {
+      l.log("EvasiveWindow.close (\(self.name))")
+//      if let stuckToMeWindow = self.stuckToMeWindow {
+//         l.log("attempting to close \(stuckToMeWindow.name)")
+//         stuckToMeWindow.closeWindow()
+//      }
+//      if let tickingLabel = self.tickingLabel {
+//         tickingLabel.killTimer()
+//      }
+      tickingLabel?.killTimer()
+      self.close()
    }
 }

@@ -35,11 +35,11 @@ class InsolentPomoTimer: NSObject, NSApplicationDelegate {
    let fgAlpha = 0.5
    
    let tickIndicatorsGoodPrefix : [String] = [ "🟢", "🔵",  "🟣", "🟡", "🟠" ]
-   let tickIndicatorsGoodSuffix : [String] = []
+   let tickIndicatorsGoodSuffix : [String] = [ "m", "M" ]
    let tickIndicatorsGracePrefix : [String] = [ "⚠️", "✋", "🙉" ]
-   let tickIndicatorsGraceSuffix : [String] = []
+   let tickIndicatorsGraceSuffix : [String] = [ "!" ]
    let tickIndicatorsBadPrefix : [String] = ["🔴", "⭕️", "❌", "🛑" ]
-   let tickIndicatorsBadSuffix : [String] = []
+   let tickIndicatorsBadSuffix : [String] = [ "🤦‍♀️" ]
    
    enum TimerStatus {
       case good
@@ -47,7 +47,7 @@ class InsolentPomoTimer: NSObject, NSApplicationDelegate {
       case overtime
    }
    
-   var pomSummaryWindows: [EvasiveWindow]
+   var pomTimerSummaryWindows: [EvasiveWindow]
    var pomTimerDetailWindows: [EvasiveWindow]
    
    var dateFont: String = "White Rabbit"
@@ -57,9 +57,10 @@ class InsolentPomoTimer: NSObject, NSApplicationDelegate {
    var timeFontSize: Double = 0.02
    
    var late : Double = 150
+   let l : Logger = Logger()
    
    override public init() {
-      pomSummaryWindows = []
+      pomTimerSummaryWindows = []
       pomTimerDetailWindows = []
       self.startTime = Date()
       self.endTime = self.startTime.addingTimeInterval(TimeInterval(timerMins * 60))
@@ -74,8 +75,9 @@ class InsolentPomoTimer: NSObject, NSApplicationDelegate {
    func initializeAllScreens() {
       
       for screen in NSScreen.screens {
-         self.initTimer(screen: screen)
-         self.initDater(screen: screen)
+         self.initWindowsForScreen(screen)
+//         self.initTimers(screen: screen)
+//         self.initDaters(screen: screen)
       }
    }
    
@@ -84,6 +86,12 @@ class InsolentPomoTimer: NSObject, NSApplicationDelegate {
          forName: NSNotification.Name(rawValue: "NSApplicationDidChangeScreenParametersNotification"),
          object: NSApplication.shared,
          queue: .main) { notification in
+//            while let win = self.pomTimerDetailWindows.popLast() {
+//               win.closeWindow()
+//            }
+            while let win = self.pomTimerSummaryWindows.popLast() {
+               win.closeWindow()
+            }
 //            if let dateWindow = self.dateWindow {
 //               dateWindow.close()
 //            }
@@ -104,7 +112,7 @@ class InsolentPomoTimer: NSObject, NSApplicationDelegate {
    func getAdjustedRemainingTimeAsMins() -> Double {
       let remainingSeconds = self.getRemainingTimeAsSeconds()
       let adjustedRemainingTimeAsMins = (remainingSeconds + Double(adjustMinsDisplayBySeconds)) / 60
-      print("\(remainingSeconds)s adjusted mins: \(adjustedRemainingTimeAsMins) / \(self.getRemainingTimeAsDate())")
+      l.log("\(remainingSeconds)s adjusted mins: \(adjustedRemainingTimeAsMins) / \(self.getRemainingTimeAsDate())")
       return adjustedRemainingTimeAsMins
    }
    
@@ -117,11 +125,11 @@ class InsolentPomoTimer: NSObject, NSApplicationDelegate {
 
    func remainingTimeAsString(formatter: DateFormatter) -> String {
       
-      var displayString = String(Int(floor(abs(self.getAdjustedRemainingTimeAsMins()))))
+      var displayString = self.getTickerPrefixIndicator()
+      displayString.append(String(Int(floor(abs(self.getAdjustedRemainingTimeAsMins())))))
+      displayString.append(self.getTickerSuffixIndicator())
       
-      displayString = displayString.appending(self.getTickerPrefixIndicator())
-      
-      print("\(displayString)")
+      l.log("\(displayString)")
       return displayString
    }
    
@@ -277,30 +285,10 @@ class InsolentPomoTimer: NSObject, NSApplicationDelegate {
       return window
    }
    
-   func initDater(screen: NSScreen) {
-      //      if self.dateFontSize < 1.0 {
-      //         self.dateFontSize = self.dateFontSize * screen.frame.height
-      //      }
+   func initWindowsForScreen(_ screen: NSScreen) {
+      //   func initTimer(screen: NSScreen) {
       
-      let label = self.initLabel(
-         font: self.dateFont,
-         fontHeight: self.dateFontSize,
-         screen: screen,
-         format: "mm:ss",
-         interval: 1,
-         dummytext: "mm:ss"
-      )
-      
-      self.dateWindow = self.initWindow(
-         label: label,
-         name: "dater",
-         screen: screen,
-         stickWin: self.timeWindow!
-      )
-   }
-   
-   func initTimer(screen: NSScreen) {
-      let label = self.initLabel(
+      var summaryLabel = self.initLabel(
          font: self.timeFont,
          fontHeight: self.timeFontSize,
          screen: screen,
@@ -309,10 +297,35 @@ class InsolentPomoTimer: NSObject, NSApplicationDelegate {
          dummytext: "mins"
       )
       
-      self.timeWindow = self.initWindow(
-         label: label,
-         name: "timer",
+      var summaryWindow = self.initWindow(
+//      self.timeWindow = self.initWindow(
+         label: summaryLabel,
+         name: "summary for \(screen.localizedName)",
          screen: screen
       )
+      
+      var detailLabel = self.initLabel(
+         font: self.dateFont,
+         fontHeight: self.dateFontSize,
+         screen: screen,
+         format: "mm:ss",
+         interval: 1,
+         dummytext: "mm:ss"
+      )
+      
+      
+      var detailWindow = self.initWindow(
+         //      self.dateWindow = self.initWindow(
+         label: detailLabel,
+         name: "detail for \(screen.localizedName)",
+         screen: screen,
+         //         stickWin: self.timeWindow!
+         stickWin: summaryWindow
+      )
+      
+      self.pomTimerSummaryWindows.append(summaryWindow)
+      self.pomTimerDetailWindows.append(detailWindow)
+      
+
    }
 }
